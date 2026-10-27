@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Kikitori</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-column phone app, sticky header, fixed bottom tab bar. Indigo ink on cool paper; yamabuki yellow marks "what you're hearing now". */
+:root{
+  --bg:#eceff4; --surface:#ffffff; --sunk:#e2e6ee; --ink:#1a2135; --muted:#596179; --line:#d3d8e2;
+  --ai:#2a3f8f; --ai-ink:#ffffff; --hl:#f6c443; --hl-soft:#fbe7a8; --good:#2c7a4b; --bad:#b0412f;
+  --f-display:"Dela Gothic One","Zen Kaku Gothic New",system-ui,sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10131b; --surface:#191e2a; --sunk:#141823; --ink:#e5e8f0; --muted:#9aa2b8; --line:#2b3243;
+  --ai:#8ea4ff; --ai-ink:#0f1320; --hl:#e3ac1d; --hl-soft:#4a3d17; --good:#5cc489; --bad:#f07e69; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10131b; --surface:#191e2a; --sunk:#141823; --ink:#e5e8f0; --muted:#9aa2b8; --line:#2b3243;
+  --ai:#8ea4ff; --ai-ink:#0f1320; --hl:#e3ac1d; --hl-soft:#4a3d17; --good:#5cc489; --bad:#f07e69; color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.6;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px}
+.brand{font-family:var(--f-display);font-size:22px;letter-spacing:.02em;line-height:1}
+.brand small{display:block;font-family:var(--f-body);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+.meter{display:flex;gap:3px;align-items:flex-end;height:20px;margin-left:auto}
+.meter i{width:4px;height:6px;background:var(--line);border-radius:2px;transition:height .2s}
+.speaking .meter i{background:var(--hl);animation:bar .7s ease-in-out infinite alternate}
+.speaking .meter i:nth-child(2){animation-delay:.15s}.speaking .meter i:nth-child(3){animation-delay:.3s}
+.speaking .meter i:nth-child(4){animation-delay:.1s}.speaking .meter i:nth-child(5){animation-delay:.25s}
+@keyframes bar{from{height:4px}to{height:20px}}
+.iconbtn{background:none;border:1px solid var(--line);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;color:var(--muted)}
+main{padding-block:18px 110px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs .wrap{display:grid;grid-template-columns:repeat(5,1fr)}
+nav.tabs button{background:none;border:0;padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--muted);font-size:11px}
+nav.tabs button b{font-size:18px;font-weight:700;line-height:1.2}
+nav.tabs button[aria-current="true"]{color:var(--ai)}
+nav.tabs button[aria-current="true"] b{color:var(--ink)}
+nav.tabs .dot{display:inline-block;min-width:16px;padding:0 4px;border-radius:8px;background:var(--bad);color:#fff;font-size:10px;line-height:16px;font-family:var(--f-mono)}
+
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-family:var(--f-display);font-weight:400;font-size:26px;line-height:1.25}
+h2{font-size:18px;font-weight:700}
+h3{font-size:15px;font-weight:700}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 16px;font-weight:700;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn.primary{background:var(--ai);color:var(--ai-ink);border-color:var(--ai)}
+.btn.big{padding:14px 20px;font-size:17px;width:100%}
+.btn.ghost{background:none}
+.btn:disabled{opacity:.45;cursor:default}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--sunk);color:var(--muted);letter-spacing:.04em}
+.back{background:none;border:0;color:var(--muted);padding:0;font-size:14px;font-weight:700}
+ruby rt{font-size:.5em;color:var(--muted);font-weight:500}
+.nofuri rt{display:none}
+
+/* today */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat .n{font-family:var(--f-mono);font-size:24px;line-height:1.1}
+.stat .l{font-size:12px;color:var(--muted)}
+.plan{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.plan li{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.plan li:first-child{border-top:0}
+.check{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);flex:none;display:grid;place-items:center;font-size:14px;color:transparent}
+.plan li.done .check{background:var(--good);border-color:var(--good);color:#fff}
+.plan .what{flex:1;min-width:0}
+.plan .what b{display:block}
+.plan .what span{font-size:13px;color:var(--muted)}
+details.why summary{cursor:pointer;font-weight:700}
+details.why ul{margin:10px 0 0;padding-left:18px;font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.notice{border:1px solid var(--hl);background:var(--hl-soft);border-radius:12px;padding:12px 14px;font-size:14px}
+
+/* lists */
+.list{display:flex;flex-direction:column;gap:10px}
+.item{display:flex;gap:14px;align-items:center;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.item .jp{font-size:19px;font-weight:700;line-height:1.3}
+.item .en{font-size:13px;color:var(--muted)}
+.item .grow{flex:1;min-width:0}
+.item .num{font-family:var(--f-mono);color:var(--muted);font-size:13px;width:22px}
+.score{font-family:var(--f-mono);font-size:13px;color:var(--good)}
+
+/* player */
+.steps{display:flex;gap:4px}
+.steps i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.steps i.on{background:var(--ai)}
+.playbtn{width:84px;height:84px;border-radius:50%;border:0;background:var(--ai);color:var(--ai-ink);font-size:28px;display:grid;place-items:center;margin:4px auto}
+.playbtn.stop{background:var(--hl);color:#1a1300}
+.speedbar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.q{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;font-size:15px}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,var(--surface))}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--surface))}
+.kw{display:flex;flex-wrap:wrap;gap:8px}
+.kw span{background:var(--sunk);border-radius:10px;padding:6px 10px;font-size:15px}
+.kw small{color:var(--muted);margin-left:6px;font-size:12px}
+.lines{display:flex;flex-direction:column;gap:2px}
+.ln{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:10px 8px;border-radius:10px;cursor:pointer}
+.ln .sp{font-size:12px;color:var(--muted);font-weight:700;padding-top:6px}
+.ln .t{font-size:19px;line-height:2;min-width:0;overflow-wrap:anywhere}
+.ln .e{font-size:13px;color:var(--muted);line-height:1.5}
+.ln.now{background:var(--hl-soft)}
+.ln.turn{background:color-mix(in srgb,var(--ai) 14%,transparent)}
+.hidden-script .ln .t{filter:blur(7px);user-select:none}
+.rates{display:flex;gap:6px;margin-top:6px}
+.rates button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--muted)}
+.rates button[aria-pressed="true"][data-r="1"]{background:var(--good);border-color:var(--good);color:#fff}
+.rates button[aria-pressed="true"][data-r="2"]{background:var(--hl);border-color:var(--hl);color:#1a1300}
+.rates button[aria-pressed="true"][data-r="3"]{background:var(--bad);border-color:var(--bad);color:#fff}
+.dict .sent{font-size:19px;line-height:1.8}
+.dict .gap{display:inline-block;min-width:4em;border-bottom:2px solid var(--ai);margin:0 2px}
+.dict input{width:100%;border:1px solid var(--line);background:var(--sunk);border-radius:10px;padding:10px 12px;font-size:18px}
+.fb{font-size:14px;font-weight:700}
+.fb.ok{color:var(--good)}.fb.no{color:var(--bad)}
+.sticky-ctl{position:sticky;bottom:calc(68px + env(safe-area-inset-bottom,0px));background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;z-index:3}
+.star{background:none;border:0;color:var(--muted);font-size:18px;padding:0 4px}
+.star[aria-pressed="true"]{color:var(--hl)}
+.big-jp{font-size:24px;line-height:2;text-align:center}
+.center{text-align:center}
+.sheet{position:fixed;inset:0;background:color-mix(in srgb,#000 45%,transparent);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet .panel{background:var(--surface);width:100%;max-width:640px;border-radius:18px 18px 0 0;padding:20px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+select{width:100%;border:1px solid var(--line);background:var(--sunk);border-radius:10px;padding:10px}
+#toast{position:fixed;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--bg);border-radius:12px;padding:12px 14px;font-size:14px;max-width:608px;margin:0 auto}
+@media (prefers-reduced-motion: reduce){.speaking .meter i{animation:none;height:14px}}
+</style>
+
+</head><body>
+<div id="root">
+  <header class="top"><div class="wrap">
+    <div class="brand">聞き取り<small>Kikitori · listening</small></div>
+    <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <button class="iconbtn" data-act="settings" aria-label="Settings">⚙</button>
+  </div></header>
+  <main class="wrap" id="main"></main>
+  <nav class="tabs"><div class="wrap" id="tabs"></div></nav>
+</div>
+<div id="sheet"></div>
+
+<script>
+/* ===================== CONTENT ===================== */
+const LESSONS=[
+{id:"l1",jp:"週末の予定",en:"Weekend plans",reg:"Casual",sp:{A:"ゆき",B:"けん"},
+ situation:"Two university friends, Yuki and Ken, talk after class about the weekend.",
+ kw:[["[予定|よてい]","plans"],["[空|あ]いてる","free (casual)"],["[開店|かいてん]","store opening"],["[並|なら]ぶ","to line up"],["[集合|しゅうごう]","meet up"],["[置|お]いてく","leave behind"]],
+ lines:[
+ ["A","ねえ、[今週末|こんしゅうまつ]って[何|なに]か[予定|よてい]ある？","Hey, do you have any plans this weekend?"],
+ ["B","うーん、[土曜|どよう]はバイトなんだけど、[日曜|にちよう]なら[空|あ]いてるよ。","Hmm, I work my part-time job on Saturday, but I'm free on Sunday."],
+ ["A","じゃあさ、[日曜|にちよう]に[新|あたら]しくできたラーメン[屋|や][行|い]かない？[駅|えき]の[近|ちか]くの。","Then how about the new ramen place on Sunday? The one near the station."],
+ ["B","あ、あそこ！[行|い]きたいと[思|おも]ってたんだ。でも、すごい[並|なら]んでるって[聞|き]いたけど。","Oh, that place! I've wanted to go. But I heard the line is huge."],
+ ["A","そうなんだよね。だから[開店前|かいてんまえ]に[行|い]っとこうと[思|おも]って。[十一時|じゅういちじ][開店|かいてん]だから、[十時半|じゅうじはん][集合|しゅうごう]でどう？","Right. So I figured we'd go before it opens. It opens at eleven, so how about meeting at ten-thirty?"],
+ ["B","[早|はや]っ。まあいいけど、[遅|おく]れちゃったらごめんね。","So early. Fine, but sorry in advance if I'm late."],
+ ["A","[遅|おく]れたら[置|お]いてくからね。","If you're late, I'm leaving without you."],
+ ["B","ひどっ！わかった、ちゃんと[起|お]きるよ。","Harsh! Okay, I'll get up properly."]],
+ gist:{q:"What are they mainly arranging?",o:["Going to a new ramen shop on Sunday","Swapping B's work shift","Meeting at the station after work on Saturday","Cooking ramen at home together"]},
+ detail:[
+ {q:"Why does Yuki want to meet at 10:30?",o:["To arrive before the shop opens and the line builds","Because Ken works in the afternoon","Because the shop closes early","To catch a train"]},
+ {q:"Why is Ken busy on Saturday?",o:["He has his part-time job","He has an exam","He's visiting family","He's going to the ramen shop"]},
+ {q:"What will Yuki do if Ken is late?",o:["Go without him","Wait at the station","Call him","Pick another day"]}],
+ dict:[{line:1,blank:"空いてる",ans:["空いてる","あいてる"]},{line:4,blank:"行っとこう",ans:["行っとこう","いっとこう"]},{line:5,blank:"遅れちゃったら",ans:["遅れちゃったら","おくれちゃったら"]}]},
+
+{id:"l2",jp:"病院の受付",en:"At the clinic desk",reg:"Polite",sp:{A:"受付",B:"患者"},
+ situation:"A patient walks into a neighborhood clinic for the first time and talks to the receptionist.",
+ kw:[["[熱|ねつ]","fever"],["[喉|のど]","throat"],["[保険証|ほけんしょう]","insurance card"],["[問診票|もんしんひょう]","medical questionnaire"],["お[掛|か]けください","please sit"]],
+ lines:[
+ ["A","こんにちは。[今日|きょう]はどうされましたか。","Hello. What brings you in today?"],
+ ["B","[昨日|きのう]の[夜|よる]から[熱|ねつ]があって、[喉|のど]もすごく[痛|いた]いんです。","I've had a fever since last night, and my throat really hurts."],
+ ["A","そうですか。こちらは[初|はじ]めてですか。","I see. Is this your first visit here?"],
+ ["B","はい、[初|はじ]めてです。","Yes, it's my first time."],
+ ["A","では、[保険証|ほけんしょう]をお[預|あず]かりしてもよろしいでしょうか。それから、こちらの[問診票|もんしんひょう]にご[記入|きにゅう]ください。","Then may I take your insurance card? And please fill out this questionnaire."],
+ ["B","わかりました。どのくらい[待|ま]ちますか。","Okay. How long will I wait?"],
+ ["A","[今|いま]、[三人|さんにん]お[待|ま]ちなので、[三十分|さんじゅっぷん]ほどかかると[思|おも]います。","Three people are waiting, so it'll probably take about thirty minutes."],
+ ["B","じゃあ、[書|か]き[終|お]わったらここに[出|だ]せばいいですか。","So when I'm done writing, I hand it in here?"],
+ ["A","はい、こちらにお[願|ねが]いします。お[名前|なまえ]をお[呼|よ]びしますので、あちらでお[掛|か]けになってお[待|ま]ちください。","Yes, here please. We'll call your name, so please take a seat over there."]],
+ gist:{q:"Why is the person at the clinic?",o:["Fever and sore throat, first visit","A follow-up on an injury","Picking up medicine","Booking for a friend"]},
+ detail:[
+ {q:"How long is the expected wait?",o:["About 30 minutes","About 3 minutes","About an hour","No wait"]},
+ {q:"What does the receptionist ask for?",o:["The insurance card","Payment up front","A phone number","A referral letter"]},
+ {q:"What should the patient do after filling in the form?",o:["Hand it in at the desk and sit down","Take it to the doctor's room","Mail it later","Fill in a second form"]}],
+ dict:[{line:1,blank:"喉",ans:["喉","のど"]},{line:4,blank:"保険証",ans:["保険証","ほけんしょう"]},{line:4,blank:"問診票",ans:["問診票","もんしんひょう"]}]},
+
+{id:"l3",jp:"見積書のミス",en:"A mistake at work",reg:"Workplace",sp:{A:"田中",B:"課長"},
+ situation:"Tanaka goes to his section chief's desk. Something went wrong with a document he sent a client.",
+ kw:[["[見積書|みつもりしょ]","price quote"],["[単価|たんか]","unit price"],["[先方|せんぽう]","the other party / client"],["[訂正|ていせい]","correction"],["お[詫|わ]び","apology"]],
+ lines:[
+ ["A","[課長|かちょう]、すみません。[今|いま]、[少|すこ]しよろしいでしょうか。","Excuse me, chief. Do you have a moment?"],
+ ["B","うん、どうした？","Sure, what's up?"],
+ ["A","[実|じつ]は、[昨日|きのう]お[送|おく]りした[見積書|みつもりしょ]の[金額|きんがく]が[間違|まちが]っていまして…。","Actually, the amount on the quote I sent yesterday was wrong..."],
+ ["B","えっ、どこが？","What? Where?"],
+ ["A","[単価|たんか]を[古|ふる]いものにしてしまいまして、[合計|ごうけい]が[五万円|ごまんえん]ほど[安|やす]くなっていました。","I used the old unit price, so the total was about 50,000 yen too low."],
+ ["B","[先方|せんぽう]にはもう[連絡|れんらく]した？","Have you contacted the client yet?"],
+ ["A","いえ、まだです。[先|さき]にご[報告|ほうこく]しようと[思|おも]いまして。","No, not yet. I wanted to report it to you first."],
+ ["B","そっか、[報告|ほうこく]してくれてよかった。じゃあ、すぐに[訂正版|ていせいばん]を[作|つく]って、お[詫|わ]びのメールと[一緒|いっしょ]に[送|おく]っておいて。","Okay, glad you told me. Make a corrected version now and send it with an apology email."],
+ ["A","[承知|しょうち]しました。[本当|ほんとう]に[申|もう]し[訳|わけ]ありません。","Understood. I'm truly sorry."],
+ ["B","[次|つぎ]から[送|おく]る[前|まえ]にダブルチェックしようね。","From now on, let's double-check before sending."]],
+ gist:{q:"What is this conversation about?",o:["Reporting a mistake on a price quote","Asking for a day off","Complaining about a client","Planning a business trip"]},
+ detail:[
+ {q:"What exactly was wrong?",o:["An old unit price made the total ~¥50,000 too low","The client's name was misspelled","It went to the wrong company","The total was ~¥50,000 too high"]},
+ {q:"Has Tanaka contacted the client?",o:["No, he reported to his boss first","Yes, by phone","Yes, by email","The client called him"]},
+ {q:"What does the chief tell him to do?",o:["Send a corrected quote with an apology email","Visit the client in person","Let the chief handle it","Wait until next week"]}],
+ dict:[{line:2,blank:"見積書",ans:["見積書","みつもりしょ"]},{line:5,blank:"先方",ans:["先方","せんぽう"]},{line:8,blank:"承知しました",ans:["承知しました","しょうちしました"]}]},
+
+{id:"l4",jp:"台風の天気予報",en:"Typhoon forecast",reg:"News",sp:{A:"アナ"},
+ situation:"An evening TV weather report. Listen for which regions are affected and what Tokyo can expect.",
+ kw:[["[台風|たいふう]","typhoon"],["[接近|せっきん]","approach"],["[見込|みこ]み","expected"],["[土砂災害|どしゃさいがい]","landslide"],["[最高気温|さいこうきおん]","high temperature"],["[交通機関|こうつうきかん]","transportation"]],
+ lines:[
+ ["A","[明日|あした]の[天気|てんき]です。[台風|たいふう][十五号|じゅうごごう]は、[今夜|こんや][遅|おそ]くに[九州|きゅうしゅう][南部|なんぶ]に[接近|せっきん]する[見込|みこ]みです。","Here's tomorrow's weather. Typhoon No. 15 is expected to approach southern Kyushu late tonight."],
+ ["A","[九州|きゅうしゅう]と[四国|しこく]では、[明日|あした]の[朝|あさ]にかけて、[非常|ひじょう]に[激|はげ]しい[雨|あめ]が[降|ふ]るおそれがあります。","Kyushu and Shikoku may get extremely heavy rain through tomorrow morning."],
+ ["A","[土砂災害|どしゃさいがい]や[川|かわ]の[増水|ぞうすい]に[十分|じゅうぶん][注意|ちゅうい]してください。","Please be very careful of landslides and rising rivers."],
+ ["A","[関東|かんとう][地方|ちほう]は、[明日|あした]の[午前中|ごぜんちゅう]は[曇|くも]りですが、[午後|ごご]から[次第|しだい]に[雨|あめ]が[降|ふ]り[出|だ]すでしょう。","In Kanto, tomorrow morning will be cloudy, with rain gradually starting in the afternoon."],
+ ["A","[最高|さいこう][気温|きおん]は[東京|とうきょう]で[二十三度|にじゅうさんど]と、[今日|きょう]より[四度|よんど]ほど[低|ひく]くなる[見込|みこ]みです。","Tokyo's high is expected to be 23°C, about 4 degrees lower than today."],
+ ["A","また、[交通|こうつう][機関|きかん]に[遅|おく]れが[出|で]る[可能性|かのうせい]がありますので、お[出|で]かけの[際|さい]は[最新|さいしん]の[情報|じょうほう]をご[確認|かくにん]ください。","Transportation may be delayed, so please check the latest information before heading out."]],
+ gist:{q:"What is the main news?",o:["A typhoon is approaching southern Japan","An earthquake hit Kyushu","Tokyo will see record heat","Trains are stopped nationwide"]},
+ detail:[
+ {q:"What will Tokyo's weather be tomorrow?",o:["Cloudy in the morning, rain from the afternoon","Rain all day","Sunny and hot","Heavy rain from early morning"]},
+ {q:"Tomorrow's high in Tokyo?",o:["23°C, about 4° lower than today","27°C, about 4° higher","23°C, same as today","15°C"]},
+ {q:"What are Kyushu and Shikoku warned about?",o:["Landslides and rising rivers","Extreme heat","Snow on roads","Power outages"]}],
+ dict:[{line:0,blank:"接近",ans:["接近","せっきん"]},{line:3,blank:"次第に",ans:["次第に","しだいに"]},{line:5,blank:"交通機関",ans:["交通機関","こうつうきかん"]}]},
+
+{id:"l5",jp:"引っ越しの相談",en:"Should we move?",reg:"Casual",sp:{A:"みか",B:"りょう"},
+ situation:"A couple who live together talk about their apartment lease coming up for renewal.",
+ kw:[["[契約更新|けいやくこうしん]","lease renewal"],["しんどい","exhausting (casual)"],["[家賃|やちん]","rent"],["[我慢|がまん]","put up with"],["[在宅|ざいたく]","working from home"],["[不動産屋|ふどうさんや]","real estate agent"]],
+ lines:[
+ ["A","ねえ、[来年|らいねん]の[春|はる]に[契約|けいやく][更新|こうしん]でしょ？そろそろ[引|ひ]っ[越|こ]すかどうか[決|き]めないと。","Hey, our lease renews next spring, right? We need to decide soon whether to move."],
+ ["B","そうだね。[正直|しょうじき]、[今|いま]の[部屋|へや]、[駅|えき]から[遠|とお]すぎて[毎日|まいにち]しんどいんだよね。","Yeah. Honestly, this place is so far from the station, it wears me out every day."],
+ ["A","わかる。でも[駅近|えきちか]にすると[家賃|やちん]がけっこう[上|あ]がっちゃうよ。","I get it. But near the station, the rent goes up quite a bit."],
+ ["B","[二万|にまん]くらいなら[上|あ]がってもいいかなって[思|おも]ってるんだけど。","I'm thinking it's fine if it goes up around 20,000 yen."],
+ ["A","うーん、それなら[広|ひろ]さを[我慢|がまん]するしかないかもね。","Hmm, then we might have to put up with less space."],
+ ["B","[狭|せま]いのは[嫌|いや]だなあ。[在宅|ざいたく]の[日|ひ]もあるし、[仕事|しごと][部屋|べや]は[欲|ほ]しいんだよね。","I don't want somewhere cramped. I work from home some days, so I want a work room."],
+ ["A","じゃあ、[駅|えき]からちょっと[離|はな]れてても、バス[一本|いっぽん]で[行|い]けるところは？","Then what about a bit away from the station, but one bus ride?"],
+ ["B","ああ、それアリかも。バスなら[座|すわ]れるし。[週末|しゅうまつ]に[不動産屋|ふどうさんや][行|い]ってみよっか。","Oh, that could work. I can sit on a bus. Shall we try a real estate agent this weekend?"]],
+ gist:{q:"What are they discussing?",o:["Whether and where to move when the lease renews","Buying a house","Changing jobs","Where to go on vacation"]},
+ detail:[
+ {q:"What is Ryo's problem with the current apartment?",o:["It's too far from the station","It's too expensive","It's too noisy","The landlord is strict"]},
+ {q:"How much of a rent increase is Ryo okay with?",o:["Around ¥20,000","Around ¥2,000","Around ¥200,000","None"]},
+ {q:"What compromise do they consider?",o:["A place one bus ride from the station","A smaller place by the station","Staying put","Moving to the countryside"]}],
+ dict:[{line:0,blank:"更新",ans:["更新","こうしん"]},{line:1,blank:"しんどい",ans:["しんどい"]},{line:4,blank:"我慢",ans:["我慢","がまん"]}]},
+
+{id:"l6",jp:"イヤホンの交換",en:"Returning earphones",reg:"Polite",sp:{A:"客",B:"店員"},
+ situation:"A customer comes back to an electronics shop with a problem. Listen for what the store will and won't do.",
+ kw:[["[片方|かたほう]","one side"],["[交換|こうかん]","exchange"],["[返金|へんきん]","refund"],["[初期不良|しょきふりょう]","defect found right after purchase"],["[対応|たいおう]","handling / response"]],
+ lines:[
+ ["A","すみません、[先週|せんしゅう]こちらで[買|か]ったイヤホンなんですけど、[片方|かたほう]から[音|おと]が[出|で]なくなってしまって。","Excuse me, it's about earphones I bought here last week. One side stopped working."],
+ ["B","[大変|たいへん][申|もう]し[訳|わけ]ございません。レシートはお[持|も]ちでしょうか。","We're very sorry. Do you have the receipt?"],
+ ["A","はい、これです。","Yes, here."],
+ ["B","ありがとうございます。[購入|こうにゅう]から[一週間|いっしゅうかん][以内|いない]ですので、[新|あたら]しいものと[交換|こうかん]させていただきます。","Thank you. Since it's within a week of purchase, we'll exchange it for a new one."],
+ ["A","あの、[同|おな]じ[商品|しょうひん]じゃなくて、[返金|へんきん]してもらうことってできますか。","Um, instead of the same item, could I get a refund?"],
+ ["B","[申|もう]し[訳|わけ]ございませんが、[初期|しょき][不良|ふりょう]の[場合|ばあい]は、[交換|こうかん]のみの[対応|たいおう]となっております。","I'm sorry, but early defects can only be exchanged."],
+ ["A","そうなんですか…。じゃあ、[色|いろ]だけ[変|か]えてもらうことはできますか。","Oh, really... Then could I change just the color?"],
+ ["B","[同|おな]じ[商品|しょうひん]でしたら、[色|いろ]の[変更|へんこう]は[可能|かのう]です。[少々|しょうしょう]お[待|ま]ちください。","For the same product, a color change is possible. One moment, please."]],
+ gist:{q:"What does the customer want?",o:["To sort out defective earphones","To buy new headphones","To complain about a rude clerk","To return clothes"]},
+ detail:[
+ {q:"Why no refund?",o:["Early defects are exchange-only","The receipt is missing","It's been over a month","The item was on sale"]},
+ {q:"What does the customer end up with?",o:["The same earphones in a different color","A full refund","A different brand","Store credit"]},
+ {q:"When was the item bought?",o:["Last week","Yesterday","Last month","This morning"]}],
+ dict:[{line:0,blank:"片方",ans:["片方","かたほう"]},{line:3,blank:"交換",ans:["交換","こうかん"]},{line:5,blank:"初期不良",ans:["初期不良","しょきふりょう"]}]}
+];
+
+const STORIES=[
+{id:"s1",jp:"タマのいるコンビニ",en:"The convenience store cat",lv:"Easy",lines:[
+ ["[駅前|えきまえ]に、[小|ちい]さなコンビニがある。","In front of the station there's a small convenience store."],
+ ["そのコンビニには、[一匹|いっぴき]の[猫|ねこ]が[住|す]んでいる。","A cat lives in that store."],
+ ["[名前|なまえ]はタマ。[茶色|ちゃいろ]くて、[少|すこ]し[太|ふと]っている。","Its name is Tama. It's brown and a little chubby."],
+ ["タマは、[毎朝|まいあさ]レジの[横|よこ]で[寝|ね]ている。","Every morning Tama sleeps beside the register."],
+ ["お[客|きゃく]さんはみんな、タマに「おはよう」と[声|こえ]をかける。","Every customer says ‘good morning’ to Tama."],
+ ["でもタマは、いつも[目|め]を[開|あ]けない。","But Tama never opens its eyes."],
+ ["ある[雨|あめ]の[日|ひ]、[小|ちい]さな[男|おとこ]の[子|こ]が[一人|ひとり]で[店|みせ]に[入|はい]ってきた。","One rainy day, a little boy came into the store alone."],
+ ["[男|おとこ]の[子|こ]は[泣|な]いていた。お[母|かあ]さんとはぐれてしまったのだ。","He was crying. He had lost his mother."],
+ ["すると、タマが[急|きゅう]に[起|お]きて、[男|おとこ]の[子|こ]の[足元|あしもと]に[座|すわ]った。","Then Tama suddenly woke up and sat at his feet."],
+ ["[男|おとこ]の[子|こ]はタマをなでているうちに、[泣|な]きやんだ。","While petting Tama, the boy stopped crying."],
+ ["[十分後|じゅっぷんご]、お[母|かあ]さんが[走|はし]って[店|みせ]に[入|はい]ってきた。","Ten minutes later, his mother came running in."],
+ ["[男|おとこ]の[子|こ]は[笑|わら]って、「[猫|ねこ]が[待|ま]っててくれたんだよ」と[言|い]った。","The boy smiled and said, ‘The cat waited with me.’"],
+ ["タマはまた、レジの[横|よこ]で[目|め]を[閉|と]じた。","Tama closed its eyes again beside the register."]]},
+{id:"s2",jp:"初めての一人旅",en:"My first solo trip",lv:"Easy",lines:[
+ ["[大学|だいがく][二年|にねん]の[夏|なつ]、[私|わたし]は[初|はじ]めて[一人|ひとり]で[旅行|りょこう]に[出|で]かけた。","The summer of my second year of college, I traveled alone for the first time."],
+ ["[行|い]き[先|さき]は、[北海道|ほっかいどう]の[小|ちい]さな[町|まち]だった。","I went to a small town in Hokkaido."],
+ ["[飛行機|ひこうき]を[降|お]りると、[空気|くうき]が[東京|とうきょう]よりずっと[涼|すず]しかった。","When I got off the plane, the air was much cooler than in Tokyo."],
+ ["[予約|よやく]していた[宿|やど]は、[駅|えき]から[歩|ある]いて[二十分|にじゅっぷん]のところにあった。","The inn I'd booked was a twenty-minute walk from the station."],
+ ["[宿|やど]のおばあさんは、とても[優|やさ]しい[人|ひと]だった。","The old woman who ran the inn was very kind."],
+ ["「[夕飯|ゆうはん]は[六時|ろくじ]だからね」と[言|い]って、[部屋|へや]に[案内|あんない]してくれた。","‘Dinner's at six,’ she said, and showed me to my room."],
+ ["[夕飯|ゆうはん]には、その[日|ひ]の[朝|あさ]にとれた[魚|さかな]が[出|で]てきた。","Dinner was fish caught that same morning."],
+ ["こんなにおいしい[魚|さかな]を[食|た]べたのは、[生|う]まれて[初|はじ]めてだった。","I'd never eaten fish that good in my life."],
+ ["[次|つぎ]の[日|ひ]、[私|わたし]は[自転車|じてんしゃ]を[借|か]りて、[湖|みずうみ]まで[走|はし]った。","The next day I borrowed a bike and rode to the lake."],
+ ["[途中|とちゅう]で[道|みち]に[迷|まよ]ったけれど、[地元|じもと]の[人|ひと]が[親切|しんせつ]に[教|おし]えてくれた。","I got lost on the way, but a local kindly gave me directions."],
+ ["[湖|みずうみ]に[着|つ]いたとき、[水|みず]がまるで[鏡|かがみ]のように[空|そら]を[映|うつ]していた。","When I reached the lake, the water reflected the sky like a mirror."],
+ ["[一人旅|ひとりたび]は[少|すこ]し[寂|さび]しいと[思|おも]っていたけれど、[実際|じっさい]はたくさんの[人|ひと]と[話|はな]した[旅|たび]だった。","I thought traveling alone would be lonely, but I ended up talking with lots of people."]]},
+{id:"s3",jp:"祖母のカレー",en:"Grandma's curry",lv:"Medium",lines:[
+ ["[私|わたし]の[祖母|そぼ]は、[料理|りょうり]がとても[上手|じょうず]だった。","My grandmother was a wonderful cook."],
+ ["[中|なか]でも[一番|いちばん][好|す]きだったのは、[祖母|そぼ]のカレーだ。","My favorite of all was her curry."],
+ ["[祖母|そぼ]のカレーには、りんごとはちみつが[入|はい]っていて、[少|すこ]し[甘|あま]かった。","It had apple and honey in it and was a little sweet."],
+ ["[子|こ]どもの[頃|ころ]、[私|わたし]は[週末|しゅうまつ]になると[祖母|そぼ]の[家|いえ]に[遊|あそ]びに[行|い]った。","As a child, I visited her house every weekend."],
+ ["[台所|だいどころ]からいい[匂|にお]いがしてくると、「[今日|きょう]はカレーだ」とすぐにわかった。","When a good smell came from the kitchen, I knew right away it was curry day."],
+ ["[祖母|そぼ]が[亡|な]くなってから、あの[味|あじ]をもう[一度|いちど][食|た]べたいと[何度|なんど]も[思|おも]った。","After she passed away, I often wished I could taste it again."],
+ ["でも、レシピはどこにも[書|か]いていなかった。","But the recipe wasn't written down anywhere."],
+ ["[去年|きょねん]、[母|はは]と[二人|ふたり]で、[祖母|そぼ]のカレーを[作|つく]ってみることにした。","Last year, my mother and I decided to try making it."],
+ ["[何回|なんかい][作|つく]っても、なかなか[同|おな]じ[味|あじ]にならなかった。","No matter how many times we made it, it never tasted quite the same."],
+ ["[五回目|ごかいめ]に、[母|はは]が「[隠|かく]し[味|あじ]にしょうゆを[入|い]れていたかも」と[言|い]い[出|だ]した。","On the fifth try, my mother said, ‘Maybe she added soy sauce as a secret ingredient.’"],
+ ["[少|すこ]しだけしょうゆを[入|い]れてみると、[懐|なつ]かしい[味|あじ]がした。","We added just a little soy sauce, and it tasted like the old days."],
+ ["[私|わたし]たちは[台所|だいどころ]で、[顔|かお]を[見合|みあ]わせて[笑|わら]った。","Standing in the kitchen, we looked at each other and laughed."]]}
+];
+
+const PAIRS=[
+ [["叔母さん","おばさん","aunt"],["お婆さん","おばあさん","grandmother"]],
+ [["病院","びょういん","hospital"],["美容院","びよういん","hair salon"]],
+ [["来て","きて","come"],["切手","きって","stamp"]],
+ [["主人","しゅじん","husband"],["囚人","しゅうじん","prisoner"]],
+ [["坂","さか","slope"],["作家","さっか","writer"]],
+ [["雪","ゆき","snow"],["勇気","ゆうき","courage"]],
+ [["いえ","いえ","house / no"],["いいえ","いいえ","no (polite)"]],
+ [["過去","かこ","the past"],["加工","かこう","processing"]],
+ [["予約","よやく","reservation"],["ようやく","ようやく","finally"]],
+ [["音","おと","sound"],["夫","おっと","husband"]],
+ [["取る","とる","to take"],["通る","とおる","to pass"]],
+ [["世界","せかい","world"],["正解","せいかい","correct answer"]],
+ [["鯛","たい","sea bream"],["単位","たんい","unit / credit"]],
+ [["来た","きた","came"],["切った","きった","cut"]]
+];
+
+const CASUAL=[
+ ["宿題、まだやってないの？","やっていない","やってある","やらない"],
+ ["もう全部食べちゃった。","食べてしまった","食べてあった","食べさせた"],
+ ["明日早いから、もう寝なきゃ。","寝なければ（いけない）","寝てはいけない","寝たら"],
+ ["資料、机の上に置いといたよ。","置いておいた","置いていった","置いてあげた"],
+ ["ちょっとそこで待ってて。","待っていて","待ってみて","待たせて"],
+ ["雨降りそうだから、傘持ってったほうがいいよ。","持っていった","持っておいた","持ってきた"],
+ ["それ、言っちゃだめだよ。","言ってはだめ","言ってしまった","言わなくてもいい"],
+ ["何言ってんの？","言っているの","言ったの","言っておくの"],
+ ["先週も同じこと言ってたじゃん。","言っていたじゃない","言っていたら","言っておいた"],
+ ["昨日ちょっと飲みすぎちゃった。","飲みすぎてしまった","飲みすぎていた","飲みすぎさせた"],
+ ["終電あるから、早く帰んなきゃ。","帰らなければ","帰ってしまえば","帰ったら"],
+ ["これ、どうすりゃいいの？","どうすればいいの","どうしたらいいの？（過去）","どうしてもいいの"],
+ ["そんなの知らないってば。","知らないと言っているでしょう","知らないそうだ","知らなかったら"],
+ ["来週の飲み会、行けたら行くね。","行くことができたら","行ってみたら","行かせたら"]
+];
+
+const CLIPS={"A|ねえ、今週末って何か予定ある？": "audio/7557a018a7.mp3", "B|うーん、土曜はバイトなんだけど、日曜なら空いてるよ。": "audio/4813e11db5.mp3", "A|じゃあさ、日曜に新しくできたラーメン屋行かない？駅の近くの。": "audio/3ee315d088.mp3", "B|あ、あそこ！行きたいと思ってたんだ。でも、すごい並んでるって聞いたけど。": "audio/4bf59ca048.mp3", "A|そうなんだよね。だから開店前に行っとこうと思って。十一時開店だから、十時半集合でどう？": "audio/0cbe744594.mp3", "B|早っ。まあいいけど、遅れちゃったらごめんね。": "audio/e7db36408c.mp3", "A|遅れたら置いてくからね。": "audio/20ce3a0afc.mp3", "B|ひどっ！わかった、ちゃんと起きるよ。": "audio/312e617603.mp3", "A|こんにちは。今日はどうされましたか。": "audio/6e2616472a.mp3", "B|昨日の夜から熱があって、喉もすごく痛いんです。": "audio/5a195a979f.mp3", "A|そうですか。こちらは初めてですか。": "audio/2a5757d1f9.mp3", "B|はい、初めてです。": "audio/3c000e7597.mp3", "A|では、保険証をお預かりしてもよろしいでしょうか。それから、こちらの問診票にご記入ください。": "audio/6a28fa2580.mp3", "B|わかりました。どのくらい待ちますか。": "audio/cc288f0f81.mp3", "A|今、三人お待ちなので、三十分ほどかかると思います。": "audio/35c283fc91.mp3", "B|じゃあ、書き終わったらここに出せばいいですか。": "audio/35db0e8714.mp3", "A|はい、こちらにお願いします。お名前をお呼びしますので、あちらでお掛けになってお待ちください。": "audio/5924a1b4cd.mp3", "A|課長、すみません。今、少しよろしいでしょうか。": "audio/54f0e69370.mp3", "B|うん、どうした？": "audio/d2efa731eb.mp3", "A|実は、昨日お送りした見積書の金額が間違っていまして…。": "audio/59a98713cc.mp3", "B|えっ、どこが？": "audio/a28dc86f9d.mp3", "A|単価を古いものにしてしまいまして、合計が五万円ほど安くなっていました。": "audio/18c231b0e2.mp3", "B|先方にはもう連絡した？": "audio/879e5356a0.mp3", "A|いえ、まだです。先にご報告しようと思いまして。": "audio/0069b30c8b.mp3", "B|そっか、報告してくれてよかった。じゃあ、すぐに訂正版を作って、お詫びのメールと一緒に送っておいて。": "audio/4674fa4bd0.mp3", "A|承知しました。本当に申し訳ありません。": "audio/93569f5f2c.mp3", "B|次から送る前にダブルチェックしようね。": "audio/77984691bd.mp3", "A|明日の天気です。台風十五号は、今夜遅くに九州南部に接近する見込みです。": "audio/aa38adeb42.mp3", "A|九州と四国では、明日の朝にかけて、非常に激しい雨が降るおそれがあります。": "audio/11414a15ba.mp3", "A|土砂災害や川の増水に十分注意してください。": "audio/56a11083fa.mp3", "A|関東地方は、明日の午前中は曇りですが、午後から次第に雨が降り出すでしょう。": "audio/84bffcf4d7.mp3", "A|最高気温は東京で二十三度と、今日より四度ほど低くなる見込みです。": "audio/9b95549578.mp3", "A|また、交通機関に遅れが出る可能性がありますので、お出かけの際は最新の情報をご確認ください。": "audio/0df1ef0825.mp3", "A|ねえ、来年の春に契約更新でしょ？そろそろ引っ越すかどうか決めないと。": "audio/3a7fec5c15.mp3", "B|そうだね。正直、今の部屋、駅から遠すぎて毎日しんどいんだよね。": "audio/efc48e33f6.mp3", "A|わかる。でも駅近にすると家賃がけっこう上がっちゃうよ。": "audio/632a8f4018.mp3", "B|二万くらいなら上がってもいいかなって思ってるんだけど。": "audio/6b1ff47741.mp3", "A|うーん、それなら広さを我慢するしかないかもね。": "audio/74255538fc.mp3", "B|狭いのは嫌だなあ。在宅の日もあるし、仕事部屋は欲しいんだよね。": "audio/bd25a62a53.mp3", "A|じゃあ、駅からちょっと離れてても、バス一本で行けるところは？": "audio/48bc4d8cd3.mp3", "B|ああ、それアリかも。バスなら座れるし。週末に不動産屋行ってみよっか。": "audio/75e770fdc0.mp3", "A|すみません、先週こちらで買ったイヤホンなんですけど、片方から音が出なくなってしまって。": "audio/7e086df633.mp3", "B|大変申し訳ございません。レシートはお持ちでしょうか。": "audio/1ce5c63730.mp3", "A|はい、これです。": "audio/eb4188d44b.mp3", "B|ありがとうございます。購入から一週間以内ですので、新しいものと交換させていただきます。": "audio/1a21bcdaa2.mp3", "A|あの、同じ商品じゃなくて、返金してもらうことってできますか。": "audio/70d79b045a.mp3", "B|申し訳ございませんが、初期不良の場合は、交換のみの対応となっております。": "audio/7f93746034.mp3", "A|そうなんですか…。じゃあ、色だけ変えてもらうことはできますか。": "audio/402de2f39e.mp3", "B|同じ商品でしたら、色の変更は可能です。少々お待ちください。": "audio/f480b1ac35.mp3", "A|駅前に、小さなコンビニがある。": "audio/0f75b00bbc.mp3", "A|そのコンビニには、一匹の猫が住んでいる。": "audio/c4a739c484.mp3", "A|名前はタマ。茶色くて、少し太っている。": "audio/35325ca24d.mp3", "A|タマは、毎朝レジの横で寝ている。": "audio/7514769039.mp3", "A|お客さんはみんな、タマに「おはよう」と声をかける。": "audio/04cfbf178a.mp3", "A|でもタマは、いつも目を開けない。": "audio/723058a967.mp3", "A|ある雨の日、小さな男の子が一人で店に入ってきた。": "audio/4652bed761.mp3", "A|男の子は泣いていた。お母さんとはぐれてしまったのだ。": "audio/e99e6fdec3.mp3", "A|すると、タマが急に起きて、男の子の足元に座った。": "audio/fb6bbf0348.mp3", "A|男の子はタマをなでているうちに、泣きやんだ。": "audio/2d2ee65829.mp3", "A|十分後、お母さんが走って店に入ってきた。": "audio/7334928525.mp3", "A|男の子は笑って、「猫が待っててくれたんだよ」と言った。": "audio/e299565f6d.mp3", "A|タマはまた、レジの横で目を閉じた。": "audio/197fd29017.mp3", "A|大学二年の夏、私は初めて一人で旅行に出かけた。": "audio/31ff8e2e2d.mp3", "A|行き先は、北海道の小さな町だった。": "audio/7bf42f2836.mp3", "A|飛行機を降りると、空気が東京よりずっと涼しかった。": "audio/a0df8021c3.mp3", "A|予約していた宿は、駅から歩いて二十分のところにあった。": "audio/14aa269502.mp3", "A|宿のおばあさんは、とても優しい人だった。": "audio/0ab30f4740.mp3", "A|「夕飯は六時だからね」と言って、部屋に案内してくれた。": "audio/e97591e583.mp3", "A|夕飯には、その日の朝にとれた魚が出てきた。": "audio/40882c8fd5.mp3", "A|こんなにおいしい魚を食べたのは、生まれて初めてだった。": "audio/6f0cf2a25d.mp3", "A|次の日、私は自転車を借りて、湖まで走った。": "audio/4a5a6c07a4.mp3", "A|途中で道に迷ったけれど、地元の人が親切に教えてくれた。": "audio/6efeefa719.mp3", "A|湖に着いたとき、水がまるで鏡のように空を映していた。": "audio/fb178dd3c2.mp3", "A|一人旅は少し寂しいと思っていたけれど、実際はたくさんの人と話した旅だった。": "audio/7619311fe4.mp3", "A|私の祖母は、料理がとても上手だった。": "audio/2c6e7dc9ef.mp3", "A|中でも一番好きだったのは、祖母のカレーだ。": "audio/28d524d29d.mp3", "A|祖母のカレーには、りんごとはちみつが入っていて、少し甘かった。": "audio/c08c2922f5.mp3", "A|子どもの頃、私は週末になると祖母の家に遊びに行った。": "audio/e9a99b6161.mp3", "A|台所からいい匂いがしてくると、「今日はカレーだ」とすぐにわかった。": "audio/9f34a04f9a.mp3", "A|祖母が亡くなってから、あの味をもう一度食べたいと何度も思った。": "audio/53993de13b.mp3", "A|でも、レシピはどこにも書いていなかった。": "audio/04a501c936.mp3", "A|去年、母と二人で、祖母のカレーを作ってみることにした。": "audio/3896e3fd98.mp3", "A|何回作っても、なかなか同じ味にならなかった。": "audio/8ab2c22b20.mp3", "A|五回目に、母が「隠し味にしょうゆを入れていたかも」と言い出した。": "audio/78906996b8.mp3", "A|少しだけしょうゆを入れてみると、懐かしい味がした。": "audio/ac61ac8864.mp3", "A|私たちは台所で、顔を見合わせて笑った。": "audio/a290883783.mp3", "A|叔母さん": "audio/2c52fb70b7.mp3", "A|お婆さん": "audio/88de64f332.mp3", "A|病院": "audio/d575a5f779.mp3", "A|美容院": "audio/548f14b702.mp3", "A|来て": "audio/e83b44d1cd.mp3", "A|切手": "audio/430b45db58.mp3", "A|主人": "audio/3fc7c83484.mp3", "A|囚人": "audio/d37c3d0c3a.mp3", "A|坂": "audio/50b3d1bf1e.mp3", "A|作家": "audio/311f3721a5.mp3", "A|雪": "audio/bc285f99fe.mp3", "A|勇気": "audio/87ce51622b.mp3", "A|いえ": "audio/77f62fd7bf.mp3", "A|いいえ": "audio/dfb1eb0756.mp3", "A|過去": "audio/0f33480d5f.mp3", "A|加工": "audio/c58d4d67a5.mp3", "A|予約": "audio/e2b97bbf0e.mp3", "A|ようやく": "audio/c7309b4bd8.mp3", "A|音": "audio/598b2cbc36.mp3", "A|夫": "audio/20c47d5501.mp3", "A|取る": "audio/efa8dfa314.mp3", "A|通る": "audio/3d7512407c.mp3", "A|世界": "audio/cee507b261.mp3", "A|正解": "audio/858c9cec3a.mp3", "A|鯛": "audio/ba77c05a20.mp3", "A|単位": "audio/432469229e.mp3", "A|来た": "audio/27b5f59d98.mp3", "A|切った": "audio/5cc7c04f09.mp3", "A|宿題、まだやってないの？": "audio/c872bcaafa.mp3", "A|もう全部食べちゃった。": "audio/71f1baaa94.mp3", "A|明日早いから、もう寝なきゃ。": "audio/6f85f9f560.mp3", "A|資料、机の上に置いといたよ。": "audio/21cbfc531e.mp3", "A|ちょっとそこで待ってて。": "audio/82a045d9cf.mp3", "A|雨降りそうだから、傘持ってったほうがいいよ。": "audio/9851928134.mp3", "A|それ、言っちゃだめだよ。": "audio/2484505c82.mp3", "A|何言ってんの？": "audio/3b1790770c.mp3", "A|先週も同じこと言ってたじゃん。": "audio/7d7a6a2e32.mp3", "A|昨日ちょっと飲みすぎちゃった。": "audio/06361cdbf7.mp3", "A|終電あるから、早く帰んなきゃ。": "audio/18d169a48b.mp3", "A|これ、どうすりゃいいの？": "audio/cdd16963a1.mp3", "A|そんなの知らないってば。": "audio/acec36b26c.mp3", "A|来週の飲み会、行けたら行くね。": "audio/b59afd6339.mp3", "A|こんにちは。今日も聞き取りの練習をしましょう。": "audio/6628746c8a.mp3", "B|はい、がんばります。": "audio/74da6a637f.mp3", "A|こちら、3410円になります。": "audio/a124bd398c.mp3", "A|こちら、9800円になります。": "audio/857638f6f2.mp3", "A|こちら、1640円になります。": "audio/79425f1c72.mp3", "A|こちら、4140円になります。": "audio/4722ac7afe.mp3", "A|こちら、6760円になります。": "audio/a6fd9c9517.mp3", "A|こちら、590円になります。": "audio/0da750bc8f.mp3", "A|こちら、840円になります。": "audio/b0e07a581f.mp3", "A|こちら、8500円になります。": "audio/f0c1dd9d60.mp3", "A|こちら、5580円になります。": "audio/36b5019f4a.mp3", "A|こちら、1060円になります。": "audio/d4e36866cb.mp3", "A|こちら、3840円になります。": "audio/426ee69ef3.mp3", "A|こちら、6060円になります。": "audio/cfa31ac89e.mp3", "A|会議は午後1時45分からです。": "audio/f48533591d.mp3", "A|会議は午後2時半からです。": "audio/39332d482f.mp3", "A|会議は午後9時30分からです。": "audio/133c8ba1d7.mp3", "A|会議は午前4時55分からです。": "audio/357ce3beae.mp3", "A|会議は午前1時50分からです。": "audio/aec784d19f.mp3", "A|会議は午後1時15分からです。": "audio/cdd2d14186.mp3", "A|会議は午後3時20分からです。": "audio/fc8025ba30.mp3", "A|会議は午前9時5分からです。": "audio/3c9005cc47.mp3", "A|会議は午後9時55分からです。": "audio/d1ca4592d6.mp3", "A|会議は午前10時50分からです。": "audio/0983e9b378.mp3", "A|会議は午前6時5分からです。": "audio/32e7193a9f.mp3", "A|会議は午後2時50分からです。": "audio/25ce60240e.mp3", "A|締め切りは4月20日です。": "audio/24d2e37842.mp3", "A|締め切りは11月28日です。": "audio/e00aee5b8b.mp3", "A|締め切りは6月8日です。": "audio/34ee13a86e.mp3", "A|締め切りは10月8日です。": "audio/b99f5d2d09.mp3", "A|締め切りは6月20日です。": "audio/96fe7fe2c0.mp3", "A|締め切りは4月12日です。": "audio/8b84d62fd7.mp3", "A|締め切りは12月16日です。": "audio/3898c14bbd.mp3", "A|締め切りは2月20日です。": "audio/f4688e9c01.mp3", "A|締め切りは9月20日です。": "audio/0d2a88de1d.mp3", "A|締め切りは6月1日です。": "audio/125236809b.mp3", "A|締め切りは5月5日です。": "audio/570aae93ae.mp3", "A|学生が7人います。": "audio/977249bf96.mp3", "A|ペンを3本ください。": "audio/3c90984df5.mp3", "A|切手を6枚ください。": "audio/23f4936c60.mp3", "A|ビールを3杯お願いします。": "audio/9105de50af.mp3", "A|猫が8匹います。": "audio/52d526f1e9.mp3", "A|本を7冊借りました。": "audio/7468c344e1.mp3", "A|学生が1人います。": "audio/2f8a629b41.mp3", "A|ペンを2本ください。": "audio/c515035b11.mp3", "A|切手を9枚ください。": "audio/aa972ba1b3.mp3", "A|ビールを10杯お願いします。": "audio/129da64806.mp3", "A|猫が6匹います。": "audio/2b8b264548.mp3", "A|本を6冊借りました。": "audio/dc1b4599bf.mp3"};
+const NUMS=[{"say": "こちら、3410円になります。", "ans": ["3410"], "hint": "Price in yen (digits)"}, {"say": "こちら、9800円になります。", "ans": ["9800"], "hint": "Price in yen (digits)"}, {"say": "こちら、1640円になります。", "ans": ["1640"], "hint": "Price in yen (digits)"}, {"say": "こちら、4140円になります。", "ans": ["4140"], "hint": "Price in yen (digits)"}, {"say": "こちら、6760円になります。", "ans": ["6760"], "hint": "Price in yen (digits)"}, {"say": "こちら、590円になります。", "ans": ["590"], "hint": "Price in yen (digits)"}, {"say": "こちら、840円になります。", "ans": ["840"], "hint": "Price in yen (digits)"}, {"say": "こちら、8500円になります。", "ans": ["8500"], "hint": "Price in yen (digits)"}, {"say": "こちら、5580円になります。", "ans": ["5580"], "hint": "Price in yen (digits)"}, {"say": "こちら、1060円になります。", "ans": ["1060"], "hint": "Price in yen (digits)"}, {"say": "こちら、3840円になります。", "ans": ["3840"], "hint": "Price in yen (digits)"}, {"say": "こちら、6060円になります。", "ans": ["6060"], "hint": "Price in yen (digits)"}, {"say": "会議は午後1時45分からです。", "ans": ["145", "1345", "1345"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午後2時半からです。", "ans": ["230", "1430", "1430"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午後9時30分からです。", "ans": ["930", "2130", "2130"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午前4時55分からです。", "ans": ["455", "455", "0455"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午前1時50分からです。", "ans": ["150", "150", "0150"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午後1時15分からです。", "ans": ["115", "1315", "1315"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午後3時20分からです。", "ans": ["320", "1520", "1520"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午前9時5分からです。", "ans": ["905", "905", "0905"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午後9時55分からです。", "ans": ["955", "2155", "2155"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午前10時50分からです。", "ans": ["1050", "1050", "1050"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午前6時5分からです。", "ans": ["605", "605", "0605"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "会議は午後2時50分からです。", "ans": ["250", "1450", "1450"], "hint": "Time, e.g. 7:15 or 19:15"}, {"say": "締め切りは4月20日です。", "ans": ["420", "420", "0420"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは11月28日です。", "ans": ["1128", "1128", "1128"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは6月8日です。", "ans": ["68", "608", "0608"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは10月8日です。", "ans": ["108", "1008", "1008"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは6月20日です。", "ans": ["620", "620", "0620"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは4月12日です。", "ans": ["412", "412", "0412"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは12月16日です。", "ans": ["1216", "1216", "1216"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは2月20日です。", "ans": ["220", "220", "0220"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは9月20日です。", "ans": ["920", "920", "0920"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは6月1日です。", "ans": ["61", "601", "0601"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは5月5日です。", "ans": ["55", "505", "0505"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "締め切りは2月20日です。", "ans": ["220", "220", "0220"], "hint": "Date as month/day, e.g. 3/14"}, {"say": "学生が7人います。", "ans": ["7"], "hint": "How many? (people)"}, {"say": "ペンを3本ください。", "ans": ["3"], "hint": "How many? (long things)"}, {"say": "切手を6枚ください。", "ans": ["6"], "hint": "How many? (flat things)"}, {"say": "ビールを3杯お願いします。", "ans": ["3"], "hint": "How many? (cups/glasses)"}, {"say": "猫が8匹います。", "ans": ["8"], "hint": "How many? (small animals)"}, {"say": "本を7冊借りました。", "ans": ["7"], "hint": "How many? (books)"}, {"say": "学生が1人います。", "ans": ["1"], "hint": "How many? (people)"}, {"say": "ペンを2本ください。", "ans": ["2"], "hint": "How many? (long things)"}, {"say": "切手を9枚ください。", "ans": ["9"], "hint": "How many? (flat things)"}, {"say": "ビールを10杯お願いします。", "ans": ["10"], "hint": "How many? (cups/glasses)"}, {"say": "猫が6匹います。", "ans": ["6"], "hint": "How many? (small animals)"}, {"say": "本を6冊借りました。", "ans": ["6"], "hint": "How many? (books)"}];
+/* ===================== STATE ===================== */
+const KEY="kikitori.v1";
+const DEF={done:{},review:{},trouble:{},days:{},settings:{speed:0.9,voice:"",furi:true},drills:{}};
+let S;
+try{S=Object.assign(structuredClone(DEF),JSON.parse(localStorage.getItem(KEY)||"{}"));S.settings=Object.assign({},DEF.settings,S.settings||{})}catch(e){S=structuredClone(DEF)}
+let saveT;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},200)}
+function dkey(d=new Date()){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function today(){const k=dkey();if(!S.days[k])S.days[k]={ms:0,tasks:{}};return S.days[k]}
+function markTask(t){today().tasks[t]=true;save()}
+function addMs(ms){if(ms>0&&ms<120000){today().ms+=ms;save()}}
+function streak(){let n=0;const d=new Date();if(!active(dkey(d)))d.setDate(d.getDate()-1);
+  while(active(dkey(d))){n++;d.setDate(d.getDate()-1)}return n}
+function active(k){const x=S.days[k];return x&&(x.ms>30000||Object.keys(x.tasks).length>0)}
+
+/* ===================== HELPERS ===================== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const RB=/\[([^|\]]+)\|([^\]]+)\]/g;
+const rb=s=>esc(s).replace(RB,"<ruby>$1<rt>$2</rt></ruby>");
+const plain=s=>s.replace(RB,"$1");
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const LMAP=Object.fromEntries(LESSONS.map(l=>[l.id,l]));
+const SMAP=Object.fromEntries(STORIES.map(s=>[s.id,s]));
+function kata2hira(s){return s.replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))}
+function norm(s){return kata2hira(String(s).normalize("NFKC")).replace(/[\s、。！？!?,.・「」（）()]/g,"")}
+function srcLines(src){
+  if(LMAP[src]){const L=LMAP[src];return L.lines.map((x,i)=>({key:src+":"+i,sp:x[0],who:L.sp[x[0]],t:x[1],e:x[2]}))}
+  const St=SMAP[src];return St.lines.map((x,i)=>({key:src+":"+i,sp:"A",who:"",t:x[0],e:x[1]}))}
+function lineByKey(k){const [src,i]=k.split(":");if(!LMAP[src]&&!SMAP[src])return null;return srcLines(src)[+i]}
+function srcName(src){const x=LMAP[src]||SMAP[src];return x?x.jp:""}
+
+/* ===================== SPEECH ===================== */
+const TTS={tok:0,busy:false,el:null,voices:[],_fin:null,lastErr:"",
+  init(){this.el=new Audio();this.el.preload="auto";
+    if("speechSynthesis" in window){const load=()=>{this.voices=speechSynthesis.getVoices().filter(v=>/^ja/i.test(v.lang))};load();speechSynthesis.onvoiceschanged=load}},
+  clip(text,sp){return CLIPS[sp+"|"+text]||CLIPS["A|"+text]||null},
+  speak(text,sp="A",rate){rate=rate||S.settings.speed;const src=this.clip(text,sp);return src?this.playClip(src,rate):this.speakTTS(text,sp,rate)},
+  playClip(src,rate){return new Promise(res=>{const a=this.el;let done=false,t0=0;
+    const fin=()=>{if(done)return;done=true;a.onended=a.onerror=a.onplaying=null;const ms=t0?performance.now()-t0:0;addMs(ms);res(ms)};
+    this._fin=fin;a.onended=fin;a.onerror=()=>{showErr("The audio file didn't load. Check your connection and try again.");fin()};
+    a.onplaying=()=>{if(!t0)t0=performance.now()};
+    a.src=src;a.defaultPlaybackRate=rate;a.playbackRate=rate;try{a.preservesPitch=true;a.webkitPreservesPitch=true}catch(e){}
+    const pr=a.play();if(pr&&pr.catch)pr.catch(err=>{if(err&&err.name==="NotAllowedError")showErr("Your phone blocked the sound. Tap play again, and check the phone isn't on silent.");else if(err&&err.name!=="AbortError")showErr("Couldn't play audio ("+err.name+").");fin()})})},
+  speakTTS(text,sp,rate){return new Promise(res=>{if(!("speechSynthesis" in window)){res(0);return}
+    const u=new SpeechSynthesisUtterance(text);u.lang="ja-JP";const v=this.voices[0];if(v)u.voice=v;u.rate=rate;u.pitch=sp==="B"?1.25:1;
+    let t0=0,done=false;const fin=()=>{if(done)return;done=true;addMs(t0?performance.now()-t0:0);res(t0?performance.now()-t0:0)};
+    this._fin=fin;u.onstart=()=>{t0=performance.now()};u.onend=fin;u.onerror=fin;setTimeout(fin,text.length*260/rate+4000);speechSynthesis.speak(u)})},
+  stop(){this.tok++;try{this.el&&this.el.pause()}catch(e){}if(this._fin){const f=this._fin;this._fin=null;f()}if("speechSynthesis" in window)speechSynthesis.cancel();this.setBusy(false)},
+  setBusy(b){this.busy=b;document.getElementById("root").classList.toggle("speaking",b)},
+  async seq(items,opt={}){
+    this.stop();const my=++this.tok;this.setBusy(true);
+    for(let i=0;i<items.length;i++){
+      const reps=opt.repeat||1;
+      for(let r=0;r<reps;r++){
+        if(my!==this.tok)return false;
+        opt.onLine&&opt.onLine(i);
+        const ms=await this.speak(items[i].text,items[i].sp,opt.rate);
+        if(my!==this.tok)return false;
+        if(opt.shadow){opt.onTurn&&opt.onTurn(i);await sleep(Math.max(1200,ms*1.1+400));if(my!==this.tok)return false}
+        else await sleep(opt.gap??380);
+      }
+    }
+    if(my===this.tok)this.setBusy(false);
+    return true}
+};
+let errT;
+function showErr(msg){let t=document.getElementById("toast");if(!t){t=document.createElement("div");t.id="toast";t.setAttribute("role","status");document.body.appendChild(t)}
+  t.textContent=msg;t.hidden=false;clearTimeout(errT);errT=setTimeout(()=>{t.hidden=true},6000)}
+
+/* ===================== VIEW STATE ===================== */
+let V={tab:"today",sub:null};
+let sheetOpen=false;
+function go(tab,sub=null){TTS.stop();V={tab,sub};render();window.scrollTo(0,0)}
+const TABS=[["today","今日","Today"],["lessons","練習","Lessons"],["drills","耳","Drills"],["stories","物語","Stories"],["review","復習","Review"]];
+
+function dueKeys(){const now=Date.now();return Object.entries(S.review).filter(([k,v])=>v.due<=now&&lineByKey(k)).sort((a,b)=>a[1].due-b[1].due).map(x=>x[0])}
+
+function render(){
+  document.documentElement.classList.toggle("nofuri",!S.settings.furi);
+  const due=dueKeys().length;
+  $("#tabs").innerHTML=TABS.map(([k,j,e])=>`<button data-act="tab" data-k="${k}" aria-current="${V.tab===k}"><b>${j}</b><span>${e}${k==="review"&&due?` <span class="dot">${due}</span>`:""}</span></button>`).join("");
+  const m=$("#main");
+  const s=V.sub;
+  if(s&&s.type==="lesson")m.innerHTML=vLesson();
+  else if(s&&s.type==="shadow")m.innerHTML=vShadow();
+  else if(s&&s.type==="story")m.innerHTML=vStory();
+  else if(s&&s.type==="drill")m.innerHTML=vDrill();
+  else if(V.tab==="today")m.innerHTML=vToday();
+  else if(V.tab==="lessons")m.innerHTML=vLessons();
+  else if(V.tab==="drills")m.innerHTML=vDrills();
+  else if(V.tab==="stories")m.innerHTML=vStories();
+  else if(V.tab==="review")m.innerHTML=vReview();
+}
+
+function speedBar(){const o=[[0.75,"Slow"],[0.9,"Learner"],[1,"Natural"],[1.15,"Fast"]];
+  return `<div class="speedbar" role="group" aria-label="Speed">${o.map(([v,l])=>`<button class="chip spd" data-act="speed" data-v="${v}" aria-pressed="${S.settings.speed==v}">${l}</button>`).join("")}</div>`}
+function furiBtn(){return `<button class="chip" data-act="furi" aria-pressed="${S.settings.furi}">ふりがな</button>`}
+function voiceWarn(){return ""}
+
+/* ===================== TODAY ===================== */
+const TIPS={speed:["Speed","Shadow at Slow first, then step up to Natural. Your ear needs the sounds before it can handle the pace."],
+ vocab:["Unknown words","Below about 95% known words, comprehension drops off. Learn the keyword list before listening, and add missed words to your flashcards."],
+ casual:["Casual contractions","Run the Contractions drill. 〜ちゃう, 〜とく, 〜なきゃ and 〜てる hide the verbs you already know."],
+ lost:["Losing track","Lean harder on the predict step: read the situation and keywords, guess what you'll hear, then listen for whether you were right."],
+ sounds:["Specific sounds","Do the Sound pairs drill. Long vowels, small っ and ん change the word completely."],
+ easy:["Felt easy","Move to Natural or Fast speed, and shadow without the script."]};
+function vToday(){
+  const t=today(),due=dueKeys().length;
+  const next=LESSONS.find(l=>!S.done[l.id])||LESSONS.reduce((a,b)=>((S.done[a.id]?.score??0)<=(S.done[b.id]?.score??0)?a:b));
+  const story=STORIES.find(s=>!S.done[s.id])||STORIES[(new Date().getDate())%STORIES.length];
+  const drillKind=(()=>{const tr=S.trouble;if((tr.casual||0)>(tr.sounds||0))return"casual";if(tr.sounds)return"pairs";return["pairs","casual","nums"][new Date().getDay()%3]})();
+  const dn={pairs:"Sound pairs",casual:"Contractions",nums:"Numbers & times"};
+  const top=Object.entries(S.trouble).filter(([k])=>k!=="easy").sort((a,b)=>b[1]-a[1])[0];
+  const mins=Math.round(t.ms/60000);
+  const totalMin=Math.round(Object.values(S.days).reduce((a,d)=>a+d.ms,0)/60000);
+  return `<div class="stack">
+  ${voiceWarn()}
+  <div><div class="eyebrow">${new Date().toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}</div><h1>今日の聞き取り</h1></div>
+  <div class="stats">
+    <div class="stat"><div class="n">${streak()}</div><div class="l">day streak</div></div>
+    <div class="stat"><div class="n">${mins}</div><div class="l">min heard today</div></div>
+    <div class="stat"><div class="n">${totalMin}</div><div class="l">min total</div></div>
+  </div>
+  <div class="card"><h2>Today's plan · about 15 min</h2>
+  <ul class="plan">
+    <li class="${t.tasks.lesson?"done":""}"><span class="check">✓</span><div class="what"><b>Intensive: ${esc(next.jp)}</b><span>Predict → gist → details → dictation → shadow · 6 min</span></div><button class="btn" data-act="openLesson" data-id="${next.id}">Start</button></li>
+    <li class="${t.tasks.drill?"done":""}"><span class="check">✓</span><div class="what"><b>Ear drill: ${dn[drillKind]}</b><span>10 quick items · 3 min</span></div><button class="btn" data-act="openDrill" data-k="${drillKind}">Start</button></li>
+    <li class="${t.tasks.story?"done":""}"><span class="check">✓</span><div class="what"><b>Extensive: ${esc(story.jp)}</b><span>Easy story, read along while listening · 4 min</span></div><button class="btn" data-act="openStory" data-id="${story.id}">Start</button></li>
+    <li class="${t.tasks.review||!due?"done":""}"><span class="check">✓</span><div class="what"><b>Review</b><span>${due?due+" line"+(due>1?"s":"")+" due":"Nothing due"}</span></div>${due?`<button class="btn" data-act="tab" data-k="review">Start</button>`:""}</li>
+  </ul></div>
+  ${top?`<div class="card"><div class="eyebrow">Your sticking point</div><h3 style="margin-top:4px">${TIPS[top[0]][0]}</h3><p class="muted" style="margin:6px 0 0">${TIPS[top[0]][1]}</p></div>`:""}
+  <details class="card why"><summary>Why the plan looks like this</summary><ul>
+    <li><b>Shadowing</b> has the strongest evidence for Japanese listening. Learners improved at both slow and fast speeds, and it works best paired with the written script.</li>
+    <li><b>Intensive, repeated listening</b> of short clips beat one-pass listening on comprehension tests.</li>
+    <li><b>Read-while-listening</b> on easy material builds listening fluency better than either alone.</li>
+    <li><b>Predict → listen → check → reflect</b> (metacognitive training) helped low and mid-level learners the most.</li>
+    <li><b>About 95% known words</b> is the threshold for comfortable listening, so stories are kept easy and lessons give you keywords first.</li>
+  </ul></details>
+  </div>`}
+
+/* ===================== LESSONS ===================== */
+function vLessons(){return `<div class="stack"><div><div class="eyebrow">Intensive listening · N3–N2</div><h1>練習</h1></div>${voiceWarn()}
+  <div class="list">${LESSONS.map((l,i)=>`<button class="item" data-act="openLesson" data-id="${l.id}"><span class="num">${String(i+1).padStart(2,"0")}</span><span class="grow"><span class="jp">${esc(l.jp)}</span><br><span class="en">${esc(l.en)}</span></span><span class="tag">${l.reg}</span>${S.done[l.id]?`<span class="score">${S.done[l.id].score}%</span>`:""}</button>`).join("")}</div>
+  <button class="btn" data-act="openShadow" data-src="l1">Open shadowing studio</button></div>`}
+
+function startLesson(id){const L=LMAP[id];
+  const mk=o=>{const order=shuffle(o.map((_,i)=>i));return order};
+  return {type:"lesson",id,step:0,plays:0,gOrder:mk(L.gist.o),gAns:null,dOrders:L.detail.map(d=>mk(d.o)),dAns:{},dict:{},rate:{},showEn:false,trb:{},finished:false}}
+
+const STEPN=["Predict","Gist","Details","Dictation","Transcript","Reflect"];
+function vLesson(){const s=V.sub,L=LMAP[s.id];
+  const head=`<div class="row" style="justify-content:space-between"><button class="back" data-act="tab" data-k="lessons">← Lessons</button><span class="eyebrow">${s.finished?"Done":STEPN[s.step]}</span></div>
+  <div class="steps">${STEPN.map((_,i)=>`<i class="${i<=s.step?"on":""}"></i>`).join("")}</div>
+  <div><h1>${esc(L.jp)}</h1><div class="muted">${esc(L.en)} · <span class="tag">${L.reg}</span></div></div>`;
+  let body="";
+  const playBlock=(lbl)=>`<div class="card stack center"><button class="playbtn" id="pa" data-act="playAll" aria-label="Play">▶</button><div class="muted" style="font-size:14px">${lbl}</div>${speedBar()}</div>`;
+  if(s.finished){body=finishedView(s,L)}
+  else if(s.step===0){body=`<div class="card stack"><div class="eyebrow">Situation</div><p style="margin:0">${esc(L.situation)}</p>
+    <div class="eyebrow">Keywords you'll hear</div><div class="kw">${L.kw.map(k=>`<span>${rb(k[0])}<small>${esc(k[1])}</small></span>`).join("")}</div></div>
+    <div class="card"><b>Before you play it:</b> guess two or three things they'll say. You'll check your guess after the first listen.</div>
+    <button class="btn primary big" data-act="step" data-n="1">I've made my guess → Listen</button>`}
+  else if(s.step===1){const q=L.gist;body=`${playBlock(s.plays?`Played ${s.plays}×. Listen once more if you're unsure.`:"First listen. No text, just the overall idea.")}
+    ${s.plays?`<div class="card q"><h3>${esc(q.q)}</h3>${s.gOrder.map(i=>`<button class="opt ${s.gAns!=null?(i===0?"right":(s.gAns===i?"wrong":"")):""}" data-act="gans" data-i="${i}" ${s.gAns!=null?"disabled":""}>${esc(q.o[i])}</button>`).join("")}
+    ${s.gAns!=null?`<p class="fb ${s.gAns===0?"ok":"no"}" style="margin:4px 0 0">${s.gAns===0?"Right. Was it what you predicted?":"Not quite. Did your prediction steer you wrong? Listen for it next round."}</p>`:""}</div>`:""}
+    ${s.gAns!=null?`<button class="btn primary big" data-act="step" data-n="2">Next: details</button>`:""}`}
+  else if(s.step===2){const ans=Object.keys(s.dAns).length;body=`${playBlock("Second listen. Now catch the specifics.")}
+    ${L.detail.map((d,qi)=>`<div class="card q"><h3>${esc(d.q)}</h3>${s.dOrders[qi].map(i=>{const a=s.dAns[qi];return `<button class="opt ${a!=null?(i===0?"right":(a===i?"wrong":"")):""}" data-act="dans" data-q="${qi}" data-i="${i}" ${a!=null?"disabled":""}>${esc(d.o[i])}</button>`}).join("")}</div>`).join("")}
+    ${ans===L.detail.length?`<button class="btn primary big" data-act="step" data-n="3">Next: pinpoint dictation</button>`:""}`}
+  else if(s.step===3){body=`<p class="muted" style="margin:0">Play the line and type the missing word in kana or kanji. Slow it down if you need to.</p>${speedBar()}
+    ${L.dict.map((d,i)=>{const r=s.dict[i];const txt=plain(L.lines[d.line][1]);const [pre,post]=[txt.slice(0,txt.indexOf(d.blank)),txt.slice(txt.indexOf(d.blank)+d.blank.length)];
+    return `<div class="card stack dict"><div class="row"><button class="btn" data-act="dplay" data-i="${i}">▶ Play line</button><span class="muted mono">${i+1}/${L.dict.length}</span></div>
+    <div class="sent">${esc(pre)}<span class="gap">${r?esc(d.blank):"&nbsp;"}</span>${esc(post)}</div>
+    ${r?`<div class="fb ${r.ok?"ok":"no"}">${r.ok?"✓ Correct":"✗ You wrote “"+esc(r.val||"—")+"”. Answer: "+esc(d.ans.join(" / "))}</div>`:
+    `<div class="row" style="flex-wrap:nowrap"><input id="d${i}" autocomplete="off" autocapitalize="off" lang="ja" placeholder="聞こえた言葉"><button class="btn primary" data-act="dcheck" data-i="${i}">Check</button></div>`}</div>`}).join("")}
+    ${Object.keys(s.dict).length===L.dict.length?`<button class="btn primary big" data-act="step" data-n="4">Next: transcript</button>`:""}`}
+  else if(s.step===4){body=`<p class="muted" style="margin:0">Read along while it plays. Tap a line to hear it alone, and mark how well you caught each one. Shaky and lost lines go into Review.</p>
+    <div class="lines" id="lines">${L.lines.map((x,i)=>`<div class="ln" data-act="line" data-i="${i}" data-line="${i}"><span class="sp">${esc(L.sp[x[0]])}</span><div><div class="t" lang="ja">${rb(x[1])}</div>${s.showEn?`<div class="e">${esc(x[2])}</div>`:""}
+      <div class="rates">${[[1,"Got it"],[2,"Shaky"],[3,"Lost"]].map(([r,l])=>`<button data-act="rate" data-i="${i}" data-r="${r}" aria-pressed="${s.rate[i]==r}">${l}</button>`).join("")}</div></div></div>`).join("")}</div>
+    <div class="sticky-ctl"><button class="btn primary" id="pa" data-act="playAll">▶ Play all</button>${furiBtn()}<button class="chip" data-act="en" aria-pressed="${s.showEn}">English</button><button class="btn" data-act="openShadow" data-src="${L.id}">Shadow it</button></div>
+    ${speedBar()}
+    <button class="btn primary big" data-act="step" data-n="5">Next: reflect</button>`}
+  else if(s.step===5){const opts=[["speed","It was too fast"],["vocab","Words I didn't know"],["casual","Casual or contracted speech"],["lost","I lost track of the conversation"],["sounds","Couldn't tell certain sounds apart"],["easy","It felt easy"]];
+    body=`<div class="card stack"><h3>What made this hard?</h3><p class="muted" style="margin:0">Pick everything that applies. The app uses this to pick your drills.</p><div class="row">${opts.map(([k,l])=>`<button class="chip" data-act="trb" data-k="${k}" aria-pressed="${!!s.trb[k]}">${l}</button>`).join("")}</div></div>
+    <button class="btn primary big" data-act="finish">Finish lesson</button>`}
+  return `<div class="stack">${head}${body}</div>`}
+
+function lessonScore(s,L){let c=0,n=0;n++;if(s.gAns===0)c++;L.detail.forEach((_,i)=>{n++;if(s.dAns[i]===0)c++});L.dict.forEach((_,i)=>{n++;if(s.dict[i]?.ok)c++});return Math.round(c/n*100)}
+function finishedView(s,L){const sc=S.done[L.id]?.score??lessonScore(s,L);const tk=Object.keys(s.trb).filter(k=>s.trb[k]);
+  return `<div class="card stack center"><div class="eyebrow">Score</div><div class="mono" style="font-size:48px;line-height:1">${sc}%</div><p class="muted" style="margin:0">${s.addedN?s.addedN+" line"+(s.addedN>1?"s":"")+" added to Review.":"No lines added to Review."}</p></div>
+  ${tk.map(k=>`<div class="card"><h3>${TIPS[k][0]}</h3><p class="muted" style="margin:6px 0 0">${TIPS[k][1]}</p></div>`).join("")}
+  <div class="row"><button class="btn" data-act="openShadow" data-src="${L.id}">Shadow this lesson</button><button class="btn primary" data-act="tab" data-k="today">Back to today</button></div>`}
+
+/* ===================== SHADOW ===================== */
+const ROUNDS=[{n:1,l:"1 · Slow + script",rate:0.75,script:true},{n:2,l:"2 · Natural + script",rate:1,script:true},{n:3,l:"3 · Natural, no script",rate:1,script:false}];
+function vShadow(){const s=V.sub,lines=srcLines(s.src),R=ROUNDS[s.round-1];
+  return `<div class="stack"><div class="row" style="justify-content:space-between"><button class="back" data-act="back">← Back</button><span class="eyebrow">Shadowing studio</span></div>
+  <div><h1>影の練習</h1><p class="muted" style="margin:4px 0 0">Speak along a beat behind the voice. After each line there's a pause for you to repeat it.</p></div>
+  <select id="ssrc" aria-label="Material">${[...LESSONS,...STORIES].map(x=>`<option value="${x.id}" ${x.id===s.src?"selected":""}>${esc(x.jp)} · ${esc(x.en)}</option>`).join("")}</select>
+  <div class="row" role="group" aria-label="Round">${ROUNDS.map(r=>`<button class="chip" data-act="round" data-n="${r.n}" aria-pressed="${s.round===r.n}">${r.l}</button>`).join("")}</div>
+  <div class="row"><span class="muted" style="font-size:14px">Repeats per line</span>${[1,2,3].map(n=>`<button class="chip" data-act="reps" data-n="${n}" aria-pressed="${s.rep===n}">${n}×</button>`).join("")}</div>
+  <div class="lines ${R.script?"":"hidden-script"}" id="lines">${lines.map((x,i)=>`<div class="ln" data-act="sline" data-i="${i}" data-line="${i}"><span class="sp">${esc(x.who)}</span><div><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><div class="t" lang="ja" style="flex:1">${rb(x.t)}</div><button class="star" data-act="star" data-k="${x.key}" aria-pressed="${!!S.review[x.key]}" aria-label="Add to review">★</button></div></div></div>`).join("")}</div>
+  <div class="sticky-ctl"><button class="btn primary" id="pa" data-act="shadowGo">▶ Start round ${s.round}</button>${furiBtn()}</div>
+  <p class="muted" style="font-size:13px;margin:0">Work up through the rounds over a few days. Round 3 trains your ear without the text as a crutch. Tap any line to loop just that one. ★ adds a line to Review.</p></div>`}
+
+/* ===================== STORIES ===================== */
+function vStories(){return `<div class="stack"><div><div class="eyebrow">Extensive listening</div><h1>物語</h1></div>${voiceWarn()}
+  <p class="muted" style="margin:0">Easy on purpose. The goal is lots of comfortable listening while you read along. Don't stop to study.</p>
+  <div class="list">${STORIES.map(s=>`<button class="item" data-act="openStory" data-id="${s.id}"><span class="grow"><span class="jp">${esc(s.jp)}</span><br><span class="en">${esc(s.en)} · ${s.lines.length} sentences</span></span><span class="tag">${s.lv}</span>${S.done[s.id]?`<span class="score">✓</span>`:""}</button>`).join("")}</div></div>`}
+function vStory(){const s=V.sub,St=SMAP[s.id];
+  return `<div class="stack"><div class="row" style="justify-content:space-between"><button class="back" data-act="tab" data-k="stories">← Stories</button><span class="tag">${St.lv}</span></div>
+  <div><h1>${esc(St.jp)}</h1><div class="muted">${esc(St.en)}</div></div>
+  <div class="lines" id="lines">${St.lines.map((x,i)=>`<div class="ln" style="grid-template-columns:1fr" data-act="stline" data-i="${i}" data-line="${i}"><div><div class="t" lang="ja">${rb(x[0])}</div>${s.showEn?`<div class="e">${esc(x[1])}</div>`:""}</div></div>`).join("")}</div>
+  <div class="sticky-ctl"><button class="btn primary" id="pa" data-act="storyPlay">▶ Play from start</button>${furiBtn()}<button class="chip" data-act="sen" aria-pressed="${s.showEn}">English</button></div>
+  ${speedBar()}</div>`}
+
+/* ===================== DRILLS ===================== */
+const DRILLS={pairs:["音の区別","Sound pairs","Long vowels, small っ and ん. Hear one word, pick which it was."],
+ casual:["縮約形","Contractions","Hear casual speech, pick the full form it's short for."],
+ nums:["数字と時間","Numbers & times","Prices, times, dates and counters. Type what you hear."]};
+function vDrills(){return `<div class="stack"><div><div class="eyebrow">Bottom-up ear training</div><h1>耳トレ</h1></div>${voiceWarn()}
+  <div class="list">${Object.entries(DRILLS).map(([k,d])=>`<button class="item" data-act="openDrill" data-k="${k}"><span class="grow"><span class="jp">${d[0]}</span><br><span class="en"><b>${d[1]}.</b> ${d[2]}</span></span>${S.drills[k]!=null?`<span class="score">${S.drills[k]}%</span>`:""}</button>`).join("")}</div>
+  <button class="btn" data-act="openShadow" data-src="l1">Shadowing studio</button></div>`}
+
+function genDrill(kind){const N=10;let q=[];
+  if(kind==="pairs"){for(let i=0;i<N;i++){const p=pick(PAIRS);const w=Math.random()<.5?0:1;q.push({say:p[w][0],opts:shuffle([0,1]).map(j=>({l:p[j][1],s:p[j][2],ok:j===w}))})}}
+  else if(kind==="casual"){shuffle(CASUAL).slice(0,N).forEach(c=>{q.push({say:c[0],show:c[0],opts:shuffle([1,2,3]).map(j=>({l:c[j],ok:j===1}))})})}
+  else{q=shuffle(NUMS).slice(0,N).map(x=>({say:x.say,num:true,ans:x.ans,hint:x.hint}))}
+  return {type:"drill",kind,q,i:0,score:0,ans:null,inp:""}}
+function vDrill(){const s=V.sub,D=DRILLS[s.kind];
+  const head=`<div class="row" style="justify-content:space-between"><button class="back" data-act="tab" data-k="drills">← Drills</button><span class="eyebrow mono">${Math.min(s.i+1,s.q.length)}/${s.q.length}</span></div>
+  <div class="steps">${s.q.map((_,i)=>`<i class="${i<s.i||(i===s.i&&s.ans!=null)?"on":""}"></i>`).join("")}</div><div><h1>${D[0]}</h1><div class="muted">${D[1]}</div></div>`;
+  if(s.i>=s.q.length){const pc=Math.round(s.score/s.q.length*100);
+    return `<div class="stack">${head}<div class="card stack center"><div class="eyebrow">Score</div><div class="mono" style="font-size:48px;line-height:1">${pc}%</div><p class="muted" style="margin:0">${pc>=90?"Strong. Try it at Fast speed next time.":pc>=60?"Good. Repeat this drill tomorrow.":"These sounds are new to your ear. A few short rounds a day works better than one long one."}</p></div>
+    <div class="row"><button class="btn" data-act="openDrill" data-k="${s.kind}">Go again</button><button class="btn primary" data-act="tab" data-k="today">Back to today</button></div></div>`}
+  const q=s.q[s.i];
+  let body=`<div class="card stack center"><button class="playbtn" id="pa" data-act="dqplay" aria-label="Play">▶</button><div class="muted" style="font-size:14px">${q.num?esc(q.hint):s.kind==="pairs"?"Which word did you hear?":"What's the full form?"}</div>${speedBar()}</div>`;
+  if(q.num){const r=s.ans;
+    body+=`<div class="card stack">${r==null?`<div class="row" style="flex-wrap:nowrap"><input id="nin" inputmode="decimal" autocomplete="off" placeholder="Type the number" class="mono" style="flex:1;border:1px solid var(--line);background:var(--sunk);border-radius:10px;padding:10px 12px;font-size:20px"><button class="btn primary" data-act="ncheck">Check</button></div>`:
+    `<div class="fb ${r?"ok":"no"}">${r?"✓ Correct":"✗ You typed “"+esc(s.inp||"—")+"”"}</div><div class="big-jp" lang="ja">${esc(q.say)}</div>`}</div>`}
+  else{body+=`<div class="card q">${q.show&&s.ans!=null?`<div class="big-jp" lang="ja">${esc(q.show)}</div>`:""}${q.opts.map((o,i)=>`<button class="opt ${s.ans!=null?(o.ok?"right":(s.ans===i?"wrong":"")):""}" data-act="qans" data-i="${i}" ${s.ans!=null?"disabled":""}><span lang="ja" style="font-size:19px">${esc(o.l)}</span>${o.s?` <span class="muted" style="font-size:13px">${esc(o.s)}</span>`:""}</button>`).join("")}</div>`}
+  if(s.ans!=null)body+=`<button class="btn primary big" data-act="dnext">${s.i+1<s.q.length?"Next":"See score"}</button>`;
+  return `<div class="stack">${head}${body}</div>`}
+
+/* ===================== REVIEW ===================== */
+const IV=[0,1,2,4,8,16,32,64];
+function vReview(){const s=V.sub&&V.sub.type==="review"?V.sub:null;const due=dueKeys();
+  const total=Object.keys(S.review).length;
+  if(!s){return `<div class="stack"><div><div class="eyebrow">Spaced repetition</div><h1>復習</h1></div>
+    <div class="card"><div class="stats" style="grid-template-columns:1fr 1fr"><div><div class="mono" style="font-size:28px">${due.length}</div><div class="muted" style="font-size:13px">due now</div></div><div><div class="mono" style="font-size:28px">${total}</div><div class="muted" style="font-size:13px">lines saved</div></div></div></div>
+    ${due.length?`<button class="btn primary big" data-act="revStart">Start review</button>`:`<div class="card"><b>All caught up.</b><p class="muted" style="margin:6px 0 0">Lines you mark Shaky or Lost in a lesson, miss in dictation, or ★ in the shadowing studio come back here: tomorrow first, then at longer gaps as you get them.</p></div>`}
+    <p class="muted" style="font-size:13px;margin:0">How it works: listen first with no text. Try to understand it, then reveal and rate yourself honestly.</p></div>`}
+  if(s.i>=s.queue.length){markTask("review");return `<div class="stack"><div><div class="eyebrow">Spaced repetition</div><h1>復習</h1></div><div class="card stack center"><div class="mono" style="font-size:44px;line-height:1">${s.queue.length}</div><p class="muted" style="margin:0">lines reviewed. See you tomorrow.</p></div><button class="btn primary" data-act="revExit">Done</button></div>`}
+  const k=s.queue[s.i],ln=lineByKey(k);
+  return `<div class="stack"><div class="row" style="justify-content:space-between"><button class="back" data-act="revExit">← Review</button><span class="eyebrow mono">${s.i+1}/${s.queue.length}</span></div>
+  <div class="steps">${s.queue.map((_,i)=>`<i class="${i<s.i?"on":""}"></i>`).join("")}</div>
+  <div class="card stack center"><div class="eyebrow">${esc(srcName(k.split(":")[0]))}</div><button class="playbtn" id="pa" data-act="revPlay" aria-label="Play">▶</button>${speedBar()}</div>
+  ${s.rev?`<div class="card stack"><div class="big-jp" lang="ja" style="text-align:left">${rb(ln.t)}</div><div class="muted">${esc(ln.e)}</div><div class="row">${furiBtn()}</div></div>
+  <div class="row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${[["again","Again"],["hard","Hard"],["good","Good"],["easy","Easy"]].map(([r,l])=>`<button class="btn" data-act="revRate" data-r="${r}">${l}</button>`).join("")}</div>`
+  :`<button class="btn primary big" data-act="revShow">Reveal text</button>`}</div>`}
+function addReview(k){if(!S.review[k])S.review[k]={box:0,due:Date.now()+12*3600e3};save()}
+
+/* ===================== PLAYBACK HOOKS ===================== */
+function hl(i,cls="now"){document.querySelectorAll("#lines .ln").forEach(e=>e.classList.remove("now","turn"));const el=document.querySelector(`#lines [data-line="${i}"]`);if(el){el.classList.add(cls);if(cls==="now")el.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}}
+function clearHl(){document.querySelectorAll("#lines .ln").forEach(e=>e.classList.remove("now","turn"))}
+function setPA(on,label){const b=document.getElementById("pa");if(!b)return;if(!b.dataset.label)b.dataset.label=b.textContent;
+  if(b.classList.contains("playbtn")){b.classList.toggle("stop",on);b.textContent=on?"■":"▶"}else b.textContent=on?"■ Stop":(label||b.dataset.label)}
+async function run(items,opt={},after){if(TTS.busy){TTS.stop();setPA(false);clearHl();return}
+  setPA(true);const ok=await TTS.seq(items,opt);setPA(false);clearHl();if(ok&&after)after()}
+
+/* ===================== ACTIONS ===================== */
+const ACT={
+ tab:b=>{const k=b.dataset.k;go(k)},
+ settings:()=>openSettings(),
+ speed:b=>{S.settings.speed=+b.dataset.v;save();document.querySelectorAll(".spd").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v==b.dataset.v))},
+ furi:b=>{S.settings.furi=!S.settings.furi;save();document.documentElement.classList.toggle("nofuri",!S.settings.furi);document.querySelectorAll('[data-act="furi"]').forEach(x=>x.setAttribute("aria-pressed",S.settings.furi))},
+ openLesson:b=>go("lessons",startLesson(b.dataset.id)),
+ openStory:b=>go("stories",{type:"story",id:b.dataset.id,showEn:false,max:-1}),
+ openDrill:b=>go("drills",genDrill(b.dataset.k)),
+ openShadow:b=>{const prev=V.sub&&V.sub.type!=="shadow"?{tab:V.tab,sub:V.sub}:null;TTS.stop();V={tab:V.tab,sub:{type:"shadow",src:b.dataset.src,round:1,rep:1,prev}};render();scrollTo(0,0)},
+ back:()=>{const p=V.sub&&V.sub.prev;TTS.stop();if(p){V={tab:p.tab,sub:p.sub};render();scrollTo(0,0)}else go(V.tab)},
+ step:b=>{TTS.stop();V.sub.step=+b.dataset.n;render();scrollTo(0,0)},
+ playAll:()=>{const s=V.sub,L=LMAP[s.id];const items=L.lines.map(x=>({text:plain(x[1]),sp:x[0]}));
+   run(items,{onLine:i=>{if(s.step===4)hl(i)}},()=>{if(s.step===1){s.plays++;render()}})},
+ gans:b=>{V.sub.gAns=+b.dataset.i;render()},
+ dans:b=>{V.sub.dAns[+b.dataset.q]=+b.dataset.i;render()},
+ dplay:b=>{const L=LMAP[V.sub.id],d=L.dict[+b.dataset.i],x=L.lines[d.line];if(TTS.busy){TTS.stop();return}TTS.seq([{text:plain(x[1]),sp:x[0]}])},
+ dcheck:b=>{const i=+b.dataset.i,L=LMAP[V.sub.id],d=L.dict[i];const val=(document.getElementById("d"+i)||{}).value||"";
+   const ok=d.ans.some(a=>norm(a)===norm(val));V.sub.dict[i]={val,ok};if(!ok)V.sub.rate[d.line]=Math.max(V.sub.rate[d.line]||0,2);render()},
+ line:(b,e)=>{if(e.target.closest(".rates"))return;const L=LMAP[V.sub.id],i=+b.dataset.i,x=L.lines[i];TTS.stop();setPA(false);hl(i);TTS.seq([{text:plain(x[1]),sp:x[0]}]).then(ok=>{if(ok)clearHl()})},
+ rate:b=>{const i=+b.dataset.i,r=+b.dataset.r;V.sub.rate[i]=V.sub.rate[i]==r?0:r;b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",V.sub.rate[i]==x.dataset.r))},
+ en:()=>{V.sub.showEn=!V.sub.showEn;TTS.stop();render()},
+ trb:b=>{const k=b.dataset.k;V.sub.trb[k]=!V.sub.trb[k];b.setAttribute("aria-pressed",V.sub.trb[k])},
+ finish:()=>{const s=V.sub,L=LMAP[s.id];const sc=lessonScore(s,L);S.done[L.id]={date:dkey(),score:sc};
+   Object.keys(s.trb).forEach(k=>{if(s.trb[k])S.trouble[k]=(S.trouble[k]||0)+1});
+   let n=0;Object.entries(s.rate).forEach(([i,r])=>{if(r>=2){const k=L.id+":"+i;if(!S.review[k])n++;addReview(k)}});
+   s.addedN=n;s.finished=true;markTask("lesson");save();render();scrollTo(0,0)},
+ round:b=>{TTS.stop();V.sub.round=+b.dataset.n;render()},
+ reps:b=>{V.sub.rep=+b.dataset.n;document.querySelectorAll('[data-act="reps"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.n==b.dataset.n))},
+ shadowGo:()=>{const s=V.sub,R=ROUNDS[s.round-1];const lines=srcLines(s.src);
+   run(lines.map(x=>({text:plain(x.t),sp:x.sp})),{rate:R.rate,shadow:true,repeat:s.rep,onLine:i=>hl(i),onTurn:i=>hl(i,"turn")})},
+ sline:(b,e)=>{if(e.target.closest(".star"))return;const s=V.sub,R=ROUNDS[s.round-1],x=srcLines(s.src)[+b.dataset.i];const i=+b.dataset.i;
+   TTS.stop();setPA(false);TTS.seq([{text:plain(x.t),sp:x.sp}],{rate:R.rate,shadow:true,repeat:Math.max(2,s.rep),onLine:()=>hl(i),onTurn:()=>hl(i,"turn")}).then(ok=>{if(ok)clearHl()})},
+ star:b=>{const k=b.dataset.k;if(S.review[k])delete S.review[k];else S.review[k]={box:0,due:Date.now()};save();b.setAttribute("aria-pressed",!!S.review[k]);render()},
+ storyPlay:()=>{const s=V.sub,St=SMAP[s.id];playStoryFrom(0)},
+ stline:b=>{playStoryFrom(+b.dataset.i)},
+ sen:()=>{V.sub.showEn=!V.sub.showEn;TTS.stop();render()},
+ dqplay:()=>{const q=V.sub.q[V.sub.i];if(TTS.busy){TTS.stop();setPA(false);return}run([{text:q.say,sp:"A"}])},
+ qans:b=>{const s=V.sub,q=s.q[s.i];s.ans=+b.dataset.i;if(q.opts[s.ans].ok)s.score++;render()},
+ ncheck:()=>{const s=V.sub,q=s.q[s.i];const v=(document.getElementById("nin")||{}).value||"";const dig=v.normalize("NFKC").replace(/\D/g,"");
+   const ok=q.ans.includes(dig);s.ans=ok;s.inp=v;if(ok)s.score++;render()},
+ dnext:()=>{const s=V.sub;TTS.stop();s.i++;s.ans=null;s.inp="";if(s.i>=s.q.length){S.drills[s.kind]=Math.round(s.score/s.q.length*100);markTask("drill")}render()},
+ revStart:()=>{V.sub={type:"review",queue:dueKeys().slice(0,20),i:0,rev:false};render()},
+ revPlay:()=>{const ln=lineByKey(V.sub.queue[V.sub.i]);run([{text:plain(ln.t),sp:ln.sp}])},
+ revShow:()=>{V.sub.rev=true;render()},
+ revRate:b=>{const s=V.sub,k=s.queue[s.i],it=S.review[k]||{box:0},r=b.dataset.r;
+   if(r==="again"){it.box=0;it.due=Date.now()+10*60e3}
+   else{if(r==="good")it.box=Math.min(it.box+1,IV.length-1);if(r==="easy")it.box=Math.min(it.box+2,IV.length-1);if(r==="hard")it.box=Math.max(it.box,1);
+     const days=r==="hard"?1:IV[it.box]||1;it.due=Date.now()+days*864e5-3600e3}
+   S.review[k]=it;save();TTS.stop();s.i++;s.rev=false;render();scrollTo(0,0)},
+ revExit:()=>{TTS.stop();V.sub=null;render()},
+ closeSheet:()=>closeSettings(),
+ testVoice:()=>{TTS.seq([{text:"こんにちは。今日も聞き取りの練習をしましょう。",sp:"A"},{text:"はい、がんばります。",sp:"B"}])},
+ resetAsk:b=>{b.hidden=true;document.getElementById("resetYes").hidden=false},
+ resetYes:()=>{S=structuredClone(DEF);save();closeSettings();go("today")}
+};
+function playStoryFrom(start){const s=V.sub,St=SMAP[s.id];const items=St.lines.slice(start).map(x=>({text:plain(x[0]),sp:"A"}));
+  run(items,{gap:500,onLine:i=>{const idx=start+i;hl(idx);if(idx>s.max)s.max=idx;if(s.max>=St.lines.length*0.7-1&&!S.done[St.id]){S.done[St.id]={date:dkey()};markTask("story")}}},()=>{S.done[St.id]={date:dkey()};markTask("story")})}
+
+/* ===================== SETTINGS ===================== */
+function openSettings(){sheetOpen=true;
+  $("#sheet").innerHTML=`<div class="sheet" data-act="closeSheet"><div class="panel stack" role="dialog" aria-label="Settings" onclick="event.stopPropagation()">
+  <div class="row" style="justify-content:space-between"><h2>Settings</h2><button class="iconbtn" data-act="closeSheet" aria-label="Close">✕</button></div>
+  <p class="muted" style="margin:0;font-size:13px">All audio is built into the app and doesn't depend on your phone's voice settings. If you hear nothing, check that the phone isn't on silent and the volume is up.</p>
+  <div class="row"><button class="btn" data-act="testVoice">▶ Test sound</button></div>
+  <div class="stack" style="gap:6px"><span class="eyebrow">Default speed</span>${speedBar()}</div>
+  <div class="row">${furiBtn()}</div>
+  <p class="muted" style="margin:0;font-size:13px">Progress is saved in this browser on this device.</p>
+  <div class="row"><button class="btn ghost" data-act="resetAsk">Reset all progress</button><button class="btn" id="resetYes" data-act="resetYes" hidden style="color:var(--bad);border-color:var(--bad)">Yes, erase everything</button></div>
+  </div></div>`;
+  }
+function closeSettings(){sheetOpen=false;$("#sheet").innerHTML=""}
+
+/* ===================== WIRING ===================== */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;if(b.disabled)return;const f=ACT[b.dataset.act];if(f)f(b,e)});
+document.addEventListener("change",e=>{if(e.target.id==="ssrc"){TTS.stop();V.sub.src=e.target.value;render()}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input")){if(e.target.id==="nin")ACT.ncheck();else if(/^d\d+$/.test(e.target.id))ACT.dcheck({dataset:{i:e.target.id.slice(1)}})}if(e.key==="Escape"&&sheetOpen)closeSettings()});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)TTS.stop()});
+window.appBack=function(){if(sheetOpen){closeSettings();return true}if(V.sub){if(V.sub.type==="shadow"){ACT.back();return true}if(V.sub.type==="review"){ACT.revExit();return true}go(V.tab);return true}if(V.tab!=="today"){go("today");return true}return false};
+TTS.init();render();
+</script>
+
+</body></html>

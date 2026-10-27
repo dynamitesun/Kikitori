@@ -1,0 +1,27 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.dynamitesun.kikitori'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.dynamitesun.kikitori'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    signingConfigs {
+        fixed {
+            storeFile file('kikitori.keystore')
+            storePassword 'kikitori'
+            keyAlias 'kikitori'
+            keyPassword 'kikitori'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.fixed }
+        release { minifyEnabled false; signingConfig signingConfigs.fixed }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    androidResources { noCompress 'mp3' }
+}
+dependencies { implementation 'androidx.webkit:webkit:1.11.0' }
